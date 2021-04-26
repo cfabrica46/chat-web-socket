@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password  TEXT NOT NULL,
+    role TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS black_list(
