@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func open() (databases *sql.DB, err error) {

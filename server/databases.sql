@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS black_list(
     token TEXT NOT NULL UNIQUE
 );
 
-INSERT INTO users(username, password)
+INSERT INTO users(username, password,role)
     VALUES
-        ('cfabrica46',  '01234'),
-        ('arturo',      '12345'),
-        ('carlos',      'abcd'),
-        ('luis',        'lolsito123');
+        ('cfabrica46',  '01234',        'member'),
+        ('arturo',      '12345',        'member'),
+        ('carlos',      'abcd',         'member'),
+        ('luis',        'lolsito123',   'member');

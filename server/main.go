@@ -31,8 +31,6 @@ func main() {
 
 	var err error
 
-	r := mux.NewRouter()
-
 	db, err = open()
 
 	if err != nil {
@@ -41,10 +39,16 @@ func main() {
 
 	go cleanBlackList()
 
-	r.HandleFunc("/user", user).Subrouter().Use(middlewareGetUser)
+	r := mux.NewRouter()
+
 	r.HandleFunc("/login", login)
 	r.HandleFunc("/register", register)
-	r.HandleFunc("/loout", logout).Subrouter().Use(middlewareGetUser)
+
+	s := r.PathPrefix("/").Subrouter()
+	s.Use(middlewareGetUser)
+
+	s.HandleFunc("/user", user)
+	s.HandleFunc("/logout", logout)
 
 	fmt.Println("Listening on localhost:8080")
 
@@ -230,42 +234,39 @@ func logout(w http.ResponseWriter, r *http.Request) {
 func middlewareGetUser(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var errMessage ErrMessage
 
-		ErrMensaje := struct {
-			Mensaje string
-		}{}
-
-		token := r.Header.Get("Authorization header")
+		token := r.Header.Get("Authorization-header")
 
 		check := checkIfTokenIsInBlackList(token)
 
 		if !check {
-			ErrMensaje.Mensaje = "El token no es válido"
-			json.NewEncoder(w).Encode(ErrMensaje)
+			errMessage.Message = "El token no es válido"
+			json.NewEncoder(w).Encode(errMessage)
 			return
 		}
 
 		user, err := extractUserFromClaims(token)
 
 		if err != nil {
-			ErrMensaje.Mensaje = err.Error()
-			json.NewEncoder(w).Encode(ErrMensaje)
+			errMessage.Message = err.Error()
+			json.NewEncoder(w).Encode(errMessage)
 			return
 		}
 
 		deadline, err := time.Parse(time.ANSIC, user.Deadline)
 
 		if err != nil {
-			ErrMensaje.Mensaje = http.StatusText(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(ErrMensaje)
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(errMessage)
 			return
 		}
 
 		checkTime := time.Now().Local().After(deadline)
 
 		if !checkTime {
-			ErrMensaje.Mensaje = "El token no es válido"
-			json.NewEncoder(w).Encode(ErrMensaje)
+			errMessage.Message = "El token no es válido"
+			json.NewEncoder(w).Encode(errMessage)
 			return
 		}
 
