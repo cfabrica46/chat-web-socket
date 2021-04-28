@@ -14,6 +14,10 @@ type ErrMessage struct {
 	Message string
 }
 
+type Message struct {
+	Message string
+}
+
 func user(w http.ResponseWriter, r *http.Request) {
 
 	log.SetFlags(log.Lshortfile)
@@ -59,17 +63,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		var user database.User
 
-		user.Username = r.Header.Get("username")
-		user.Password = r.Header.Get("password")
+		var err error
 
-		row := db.D.QueryRow("SELECT users.id,users.role FROM users WHERE users.username=? AND users.password=?", user.Username, user.Password)
+		dataCTX := r.Context().Value(middlewares.ContextUserKey)
 
-		err := row.Scan(&user.ID, &user.Role)
-
-		if err != nil {
-			errMessage.Message = http.StatusText(http.StatusBadRequest)
+		if userBeta, ok := dataCTX.(database.User); !ok {
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(errMessage)
 			return
+
+		} else {
+			user = userBeta
 		}
 
 		user.Token, err = token.GenerateToken(user.ID, user.Username, user.Role)
@@ -105,16 +109,18 @@ func register(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 
 		var user database.User
+		var err error
 
-		user.Username = r.Header.Get("username")
-		user.Password = r.Header.Get("password")
+		dataCTX := r.Context().Value(middlewares.ContextUserKey)
 
-		err := database.AddUser(&user, db.D)
+		if userBeta, ok := dataCTX.(database.User); !ok {
 
-		if err != nil {
-			errMessage.Message = err.Error()
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(errMessage)
 			return
+
+		} else {
+			user = userBeta
 		}
 
 		user.Token, err = token.GenerateToken(user.ID, user.Username, user.Role)
@@ -143,44 +149,14 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
 
-	Mensaje := struct {
-		Mensaje string
-	}{}
-
-	var user database.User
+	var message Message
 
 	switch r.Method {
 	case "GET":
 
-		dataCTX := r.Context().Value(middlewares.ContextUserKey)
+		message.Message = "Sesión Cerrada"
 
-		if userBeta, ok := dataCTX.(database.User); !ok {
-			errMessage.Message = http.StatusText(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		} else {
-			user = userBeta
-		}
-
-		stmt, err := db.D.Prepare("INSERT INTO black_list(token) VALUES (?)")
-
-		if err != nil {
-			errMessage.Message = http.StatusText(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
-
-		_, err = stmt.Exec(user.Token)
-
-		if err != nil {
-			errMessage.Message = http.StatusText(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
-
-		Mensaje.Mensaje = "Sesión cerrada"
-
-		err = json.NewEncoder(w).Encode(Mensaje)
+		err := json.NewEncoder(w).Encode(message)
 
 		if err != nil {
 			errMessage.Message = http.StatusText(http.StatusInternalServerError)

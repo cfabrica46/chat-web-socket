@@ -28,13 +28,14 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/login", login)
-	r.HandleFunc("/register", register)
-
 	muxUser := http.HandlerFunc(user)
+	muxLogin := http.HandlerFunc(login)
+	muxRegister := http.HandlerFunc(register)
 	muxLogout := http.HandlerFunc(logout)
 
 	r.Handle("/user", middlewares.GetUser(muxUser, db.D))
+	r.Handle("/login", middlewares.LoginPassword(muxLogin, db.D))
+	r.Handle("/register", middlewares.LoginPassword(muxRegister, db.D))
 	r.Handle("/logout", middlewares.GetUser(muxLogout, db.D))
 
 	fmt.Println("Listening on localhost:8080")
