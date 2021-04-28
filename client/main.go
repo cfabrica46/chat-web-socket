@@ -262,8 +262,6 @@ func profile(token string) (err error) {
 		return
 	}
 
-	fmt.Printf("%s\n", dataJSON)
-
 	err = json.Unmarshal(dataJSON, &user)
 
 	if err != nil {

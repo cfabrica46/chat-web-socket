@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/cfabrica46/chat-web-socket/server/database"
+	"github.com/cfabrica46/chat-web-socket/server/middlewares"
 	"github.com/cfabrica46/chat-web-socket/server/token"
 )
 
@@ -12,11 +14,9 @@ type ErrMessage struct {
 	Message string
 }
 
-type ContextKey string
-
-var ContextUserKey ContextKey
-
 func user(w http.ResponseWriter, r *http.Request) {
+
+	log.SetFlags(log.Lshortfile)
 
 	var errMessage ErrMessage
 	var user database.User
@@ -24,7 +24,7 @@ func user(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 
-		dataCTX := r.Context().Value(ContextUserKey)
+		dataCTX := r.Context().Value(middlewares.ContextUserKey)
 
 		if userBeta, ok := dataCTX.(database.User); !ok {
 			errMessage.Message = http.StatusText(http.StatusInternalServerError)
@@ -152,7 +152,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 
-		dataCTX := r.Context().Value(ContextUserKey)
+		dataCTX := r.Context().Value(middlewares.ContextUserKey)
 
 		if userBeta, ok := dataCTX.(database.User); !ok {
 			errMessage.Message = http.StatusText(http.StatusInternalServerError)
