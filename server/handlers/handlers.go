@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ type Message struct {
 	Message string
 }
 
-func user(w http.ResponseWriter, r *http.Request) {
+func User(w http.ResponseWriter, r *http.Request) {
 
 	log.SetFlags(log.Lshortfile)
 
@@ -50,7 +50,7 @@ func user(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
+func Login(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
 
@@ -97,7 +97,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func register(w http.ResponseWriter, r *http.Request) {
+func Register(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
 
@@ -145,7 +145,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func logout(w http.ResponseWriter, r *http.Request) {
+func Logout(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
 

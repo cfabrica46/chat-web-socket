@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/cfabrica46/chat-web-socket/server/database"
+	"github.com/cfabrica46/chat-web-socket/server/handlers"
 	"github.com/cfabrica46/chat-web-socket/server/middlewares"
 	"github.com/gorilla/mux"
 )
@@ -28,10 +29,10 @@ func main() {
 
 	r := mux.NewRouter()
 
-	muxUser := http.HandlerFunc(user)
-	muxLogin := http.HandlerFunc(login)
-	muxRegister := http.HandlerFunc(register)
-	muxLogout := http.HandlerFunc(logout)
+	muxUser := http.HandlerFunc(handlers.User)
+	muxLogin := http.HandlerFunc(handlers.Login)
+	muxRegister := http.HandlerFunc(handlers.Register)
+	muxLogout := http.HandlerFunc(handlers.Logout)
 
 	r.Handle("/user", middlewares.GetUser(muxUser, db.D))
 	r.Handle("/login", middlewares.LoginPassword(muxLogin, db.D))
