@@ -140,43 +140,46 @@ func GetUser(db *sql.DB) mux.MiddlewareFunc {
 
 }
 
-func LoginPassword(next http.Handler, db *sql.DB) http.Handler {
+func LoginPassword(db *sql.DB) mux.MiddlewareFunc {
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(next http.Handler) http.Handler {
 
-		var errMessage ErrMessage
-		var user database.User
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		user.Username = r.Header.Get("username")
-		user.Password = r.Header.Get("password")
+			var errMessage ErrMessage
+			var user database.User
 
-		switch r.URL.String() {
-		case "/login":
+			user.Username = r.Header.Get("username")
+			user.Password = r.Header.Get("password")
 
-			row := db.QueryRow("SELECT users.id,users.role FROM users WHERE users.username=? AND users.password=?", user.Username, user.Password)
+			switch r.URL.String() {
+			case "/login":
 
-			err := row.Scan(&user.ID, &user.Role)
+				row := db.QueryRow("SELECT users.id,users.role FROM users WHERE users.username=? AND users.password=?", user.Username, user.Password)
 
-			if err != nil {
-				errMessage.Message = http.StatusText(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(errMessage)
-				return
+				err := row.Scan(&user.ID, &user.Role)
+
+				if err != nil {
+					errMessage.Message = http.StatusText(http.StatusBadRequest)
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
+
+			case "/register":
+
+				err := database.AddUser(&user, db)
+
+				if err != nil {
+					errMessage.Message = err.Error()
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
+
 			}
+			ctx := context.WithValue(r.Context(), ContextUserKey, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
 
-		case "/register":
-
-			err := database.AddUser(&user, db)
-
-			if err != nil {
-				errMessage.Message = err.Error()
-				json.NewEncoder(w).Encode(errMessage)
-				return
-			}
-
-		}
-		ctx := context.WithValue(r.Context(), ContextUserKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-
-	})
+		})
+	}
 
 }

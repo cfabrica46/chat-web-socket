@@ -31,17 +31,17 @@ func main() {
 
 	r := mux.NewRouter()
 
-	s := r.PathPrefix("/").Subrouter()
+	mUser := r.PathPrefix("/").Subrouter()
 
-	s.HandleFunc("/user", handlers.User)
-	s.HandleFunc("/logout", handlers.Logout)
-	s.Use(middlewares.GetUser(db.D))
+	mUser.HandleFunc("/user", handlers.User)
+	mUser.HandleFunc("/logout", handlers.Logout)
+	mUser.Use(middlewares.GetUser(db.D))
 
-	muxLogin := http.HandlerFunc(handlers.Login)
-	muxRegister := http.HandlerFunc(handlers.Register)
+	mLogin := r.PathPrefix("/").Subrouter()
 
-	r.Handle("/login", middlewares.LoginPassword(muxLogin, db.D))
-	r.Handle("/register", middlewares.LoginPassword(muxRegister, db.D))
+	mLogin.HandleFunc("/login", handlers.Login)
+	mLogin.HandleFunc("/register", handlers.Register)
+	mLogin.Use(middlewares.LoginPassword(db.D))
 
 	//muxRoom := http.HandlerFunc(handlers.Room)
 
