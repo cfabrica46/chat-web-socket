@@ -15,6 +15,8 @@ var db database.DB
 
 func main() {
 
+	log.SetFlags(log.Lshortfile)
+
 	d, err := database.Open()
 
 	if err != nil {
@@ -29,15 +31,21 @@ func main() {
 
 	r := mux.NewRouter()
 
-	muxUser := http.HandlerFunc(handlers.User)
+	s := r.PathPrefix("/").Subrouter()
+
+	s.HandleFunc("/user", handlers.User)
+	s.HandleFunc("/logout", handlers.Logout)
+	s.Use(middlewares.GetUser(db.D))
+
 	muxLogin := http.HandlerFunc(handlers.Login)
 	muxRegister := http.HandlerFunc(handlers.Register)
-	muxLogout := http.HandlerFunc(handlers.Logout)
 
-	r.Handle("/user", middlewares.GetUser(muxUser, db.D))
 	r.Handle("/login", middlewares.LoginPassword(muxLogin, db.D))
 	r.Handle("/register", middlewares.LoginPassword(muxRegister, db.D))
-	r.Handle("/logout", middlewares.GetUser(muxLogout, db.D))
+
+	//muxRoom := http.HandlerFunc(handlers.Room)
+
+	//r.Handle("/room/{id:[0-9]+}", middlewares.GetUser(muxRoom, db.D))
 
 	fmt.Println("Listening on localhost:8080")
 

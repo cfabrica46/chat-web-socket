@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/cfabrica46/chat-web-socket/server/database"
@@ -14,13 +13,7 @@ type ErrMessage struct {
 	Message string
 }
 
-type Message struct {
-	Message string
-}
-
 func User(w http.ResponseWriter, r *http.Request) {
-
-	log.SetFlags(log.Lshortfile)
 
 	var errMessage ErrMessage
 	var user database.User
@@ -149,14 +142,16 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
 
-	var message Message
+	Message := struct {
+		Message string
+	}{}
 
 	switch r.Method {
 	case "GET":
 
-		message.Message = "Sesión Cerrada"
+		Message.Message = "Sesión Cerrada"
 
-		err := json.NewEncoder(w).Encode(message)
+		err := json.NewEncoder(w).Encode(Message)
 
 		if err != nil {
 			errMessage.Message = http.StatusText(http.StatusInternalServerError)
@@ -167,3 +162,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+//func Room(w http.ResponseWriter, r *http.Request) {
+
+//}

@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cfabrica46/chat-web-socket/server/database"
 	"github.com/cfabrica46/chat-web-socket/server/token"
+	"github.com/gorilla/mux"
 )
 
 type ErrMessage struct {
@@ -17,80 +20,123 @@ type ErrMessage struct {
 
 type ContextKey string
 
-var ContextUserKey ContextKey
-var ContextMessageKey ContextKey
+var ContextUserKey ContextKey = "data-user"
+var ContextMessageKey ContextKey = "data-message"
 
-func GetUser(next http.Handler, db *sql.DB) http.Handler {
+func GetUser(db *sql.DB) mux.MiddlewareFunc {
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var errMessage ErrMessage
+	return func(next http.Handler) http.Handler {
 
-		tokenString := r.Header.Get("Authorization-header")
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		check := database.CheckIfTokenIsInBlackList(tokenString, db)
+			var errMessage ErrMessage
 
-		if !check {
-			errMessage.Message = "El token no es válido"
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
+			URL := r.URL.String()
 
-		user, err := token.ExtractUserFromClaims(tokenString)
+			endPoitns := strings.Split(URL, "/")
 
-		if err != nil {
-			errMessage.Message = err.Error()
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
+			if endPoitns[1] == "room" {
+				vars := mux.Vars(r)
 
-		deadline, err := time.Parse(time.ANSIC, user.Deadline)
+				id, err := strconv.Atoi(vars["id"])
 
-		if err != nil {
-			errMessage.Message = http.StatusText(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
+				if err != nil {
+					errMessage.Message = http.StatusText(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
 
-		checkTime := time.Now().Local().After(deadline)
+				check, err := database.CheckIfRoomExist(db, id)
 
-		if !checkTime {
-			errMessage.Message = "El token no es válido"
-			json.NewEncoder(w).Encode(errMessage)
-			return
-		}
+				if err != nil {
+					errMessage.Message = http.StatusText(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
 
-		switch r.URL.String() {
-		case "/logout":
+				if !check {
 
-			stmt, err := db.Prepare("INSERT INTO black_list(token) VALUES (?)")
+					errMessage.Message = "El id es Inválido"
+					json.NewEncoder(w).Encode(errMessage)
+					return
 
-			if err != nil {
-				errMessage.Message = http.StatusText(http.StatusInternalServerError)
+				}
+
+			}
+
+			tokenString := r.Header.Get("Authorization-header")
+
+			check := database.CheckIfTokenIsInBlackList(tokenString, db)
+
+			if !check {
+				errMessage.Message = "El token no es válido"
 				json.NewEncoder(w).Encode(errMessage)
 				return
 			}
 
-			_, err = stmt.Exec(user.Token)
+			user, err := token.ExtractUserFromClaims(tokenString)
 
 			if err != nil {
-				errMessage.Message = http.StatusText(http.StatusInternalServerError)
+				errMessage.Message = err.Error()
 				json.NewEncoder(w).Encode(errMessage)
 				return
 			}
-
-			next.ServeHTTP(w, r)
-
-		case "/user":
 
 			user.Token = tokenString
 
-			ctx := context.WithValue(r.Context(), ContextUserKey, user)
+			deadline, err := time.Parse(time.ANSIC, user.Deadline)
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			if err != nil {
+				errMessage.Message = http.StatusText(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(errMessage)
+				return
+			}
 
-		}
+			checkTime := time.Now().Local().After(deadline)
 
-	})
+			if !checkTime {
+				errMessage.Message = "El token no es válido"
+				json.NewEncoder(w).Encode(errMessage)
+				return
+			}
+
+			switch endPoitns[1] {
+			case "logout":
+
+				stmt, err := db.Prepare("INSERT INTO black_list(token) VALUES (?)")
+
+				if err != nil {
+					errMessage.Message = http.StatusText(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
+
+				_, err = stmt.Exec(user.Token)
+
+				if err != nil {
+					errMessage.Message = http.StatusText(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(errMessage)
+					return
+				}
+
+				next.ServeHTTP(w, r)
+
+			case "user":
+
+				ctx := context.WithValue(r.Context(), ContextUserKey, user)
+
+				next.ServeHTTP(w, r.WithContext(ctx))
+
+			case "room":
+
+				ctx := context.WithValue(r.Context(), ContextUserKey, user)
+
+				next.ServeHTTP(w, r.WithContext(ctx))
+
+			}
+
+		})
+	}
 
 }
 

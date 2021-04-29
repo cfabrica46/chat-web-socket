@@ -83,3 +83,24 @@ func CleanBlackList(db *sql.DB) {
 	}
 
 }
+
+func CheckIfRoomExist(db *sql.DB, id int) (check bool, err error) {
+
+	row := db.QueryRow("SELECT id FROM rooms WHERE id = ?", id)
+
+	err = row.Scan(&id)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+
+			err = nil
+			return
+		}
+
+		return
+	}
+
+	check = true
+
+	return
+}

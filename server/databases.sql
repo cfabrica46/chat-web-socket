@@ -9,9 +9,26 @@ CREATE TABLE IF NOT EXISTS black_list(
     token TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS rooms(
+    id INTEGER PRIMARY KEY
+);
+
 INSERT INTO users(username, password,role)
     VALUES
         ('cfabrica46',  '01234',        'member'),
         ('arturo',      '12345',        'member'),
         ('carlos',      'abcd',         'member'),
         ('luis',        'lolsito123',   'member');
+
+INSERT INTO rooms(id)
+    VALUES
+        (1),
+        (2),
+        (3),
+        (4),
+        (5),
+        (6),
+        (7),
+        (8),
+        (9),
+        (10),

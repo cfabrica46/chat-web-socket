@@ -19,10 +19,6 @@ type ErrMessage struct {
 	Message string
 }
 
-type Message struct {
-	Message string
-}
-
 func main() {
 
 	log.SetFlags(log.Lshortfile)
@@ -296,7 +292,10 @@ func profile(token string) (err error) {
 func cerrarSesión(token string) (err error) {
 
 	var errMessage ErrMessage
-	var message Message
+
+	Message := struct {
+		Message string
+	}{}
 
 	client := &http.Client{
 		Timeout: time.Second * 20,
@@ -325,7 +324,7 @@ func cerrarSesión(token string) (err error) {
 		return
 	}
 
-	err = json.Unmarshal(dataJSON, &message)
+	err = json.Unmarshal(dataJSON, &Message)
 
 	if err != nil {
 		log.Fatal(err)
@@ -333,7 +332,7 @@ func cerrarSesión(token string) (err error) {
 		return
 	}
 
-	if message.Message != "" {
+	if Message.Message != "" {
 		err = json.Unmarshal(dataJSON, &errMessage)
 
 		if err != nil {
@@ -344,7 +343,7 @@ func cerrarSesión(token string) (err error) {
 		return
 	}
 
-	fmt.Println(message.Message)
+	fmt.Println(Message.Message)
 
 	return
 }
