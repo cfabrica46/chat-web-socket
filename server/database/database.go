@@ -8,10 +8,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type DB struct {
-	D *sql.DB
-}
-
 type User struct {
 	ID                                        int
 	Username, Password, Deadline, Role, Token string

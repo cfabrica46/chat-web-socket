@@ -2,6 +2,7 @@ package requests
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ func Login(username, password, url string) (token string, err error) {
 
 	fmt.Println()
 
+	var user User
 	var errMessage ErrMessage
 
 	TokenValue := struct {
@@ -39,14 +41,22 @@ func Login(username, password, url string) (token string, err error) {
 		Timeout: time.Second * 20,
 	}
 
-	req, err := http.NewRequest("POST", url, nil)
+	user.Username = username
+	user.Password = password
+
+	dataJSON, err := json.Marshal(user)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	body := bytes.NewReader(dataJSON)
+
+	req, err := http.NewRequest("POST", url, body)
 
 	if err != nil {
 		return
 	}
-
-	req.Header.Set("username", username)
-	req.Header.Set("password", password)
 
 	resp, err := client.Do(req)
 
@@ -56,7 +66,7 @@ func Login(username, password, url string) (token string, err error) {
 
 	defer resp.Body.Close()
 
-	dataJSON, err := io.ReadAll(resp.Body)
+	dataJSON, err = io.ReadAll(resp.Body)
 
 	if err != nil {
 		return
@@ -232,6 +242,7 @@ func Chat(token string, idRoom int) (err error) {
 	go reciveMessage(ws, c)
 
 	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("\r> ")
 
 	for scanner.Scan() {
 		fmt.Print("\r> ")

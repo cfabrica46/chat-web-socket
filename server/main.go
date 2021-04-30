@@ -12,23 +12,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var db database.DB
+var db, _ = database.Open()
 
 func main() {
 
 	log.SetFlags(log.Lshortfile)
 
-	d, err := database.Open()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db = database.DB{
-		D: d,
-	}
-
-	go database.CleanBlackList(db.D)
+	go database.CleanBlackList(db)
 
 	r := mux.NewRouter()
 
@@ -37,13 +27,13 @@ func main() {
 	mUser.HandleFunc("/user", handlers.User)
 	mUser.HandleFunc("/logout", handlers.Logout)
 	mUser.HandleFunc("/chat/{id:[0-9]+}", chat.Chat)
-	mUser.Use(middlewares.GetUser(db.D))
+	mUser.Use(middlewares.GetUser(db))
 
 	mLogin := r.PathPrefix("/").Subrouter()
 
 	mLogin.HandleFunc("/login", handlers.Login)
 	mLogin.HandleFunc("/register", handlers.Register)
-	mLogin.Use(middlewares.LoginPassword(db.D))
+	mLogin.Use(middlewares.LoginPassword(db))
 
 	fmt.Println("Listening on localhost:8080")
 

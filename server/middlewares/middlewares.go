@@ -119,8 +119,13 @@ func LoginPassword(db *sql.DB) mux.MiddlewareFunc {
 			var errMessage ErrMessage
 			var user database.User
 
-			user.Username = r.Header.Get("username")
-			user.Password = r.Header.Get("password")
+			err := json.NewDecoder(r.Body).Decode(&user)
+
+			if err != nil {
+				errMessage.Message = http.StatusText(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(errMessage)
+				return
+			}
 
 			switch r.URL.String() {
 			case "/login":
