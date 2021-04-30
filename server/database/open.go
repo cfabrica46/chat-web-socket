@@ -6,6 +6,14 @@ import (
 	"os"
 )
 
+var DB *sql.DB
+
+func init() {
+
+	DB, _ = Open()
+
+}
+
 func Open() (databases *sql.DB, err error) {
 	archivo, err := os.Open("databases.db")
 

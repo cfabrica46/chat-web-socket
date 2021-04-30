@@ -69,6 +69,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			user = userBeta
 		}
 
+		row := database.DB.QueryRow("SELECT users.id,users.role FROM users WHERE users.username=? AND users.password=?", user.Username, user.Password)
+
+		err = row.Scan(&user.ID, &user.Role)
+
+		if err != nil {
+			errMessage.Message = http.StatusText(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(errMessage)
+			return
+		}
+
 		user.Token, err = token.GenerateToken(user.ID, user.Username, user.Role)
 
 		if err != nil {
@@ -116,6 +126,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			user = userBeta
 		}
 
+		err = database.AddUser(&user, database.DB)
+
+		if err != nil {
+			errMessage.Message = err.Error()
+			json.NewEncoder(w).Encode(errMessage)
+			return
+		}
+
 		user.Token, err = token.GenerateToken(user.ID, user.Username, user.Role)
 
 		if err != nil {
@@ -141,6 +159,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func Logout(w http.ResponseWriter, r *http.Request) {
 
 	var errMessage ErrMessage
+	var user database.User
 
 	Message := struct {
 		Message string
@@ -149,9 +168,37 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 
+		dataCTX := r.Context().Value(middlewares.ContextUserKey)
+
+		if userBeta, ok := dataCTX.(database.User); !ok {
+
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(errMessage)
+			return
+
+		} else {
+			user = userBeta
+		}
+
+		stmt, err := database.DB.Prepare("INSERT INTO black_list(token) VALUES (?)")
+
+		if err != nil {
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(errMessage)
+			return
+		}
+
+		_, err = stmt.Exec(user.Token)
+
+		if err != nil {
+			errMessage.Message = http.StatusText(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(errMessage)
+			return
+		}
+
 		Message.Message = "Sesión Cerrada"
 
-		err := json.NewEncoder(w).Encode(Message)
+		err = json.NewEncoder(w).Encode(Message)
 
 		if err != nil {
 			errMessage.Message = http.StatusText(http.StatusInternalServerError)
