@@ -20,15 +20,3 @@ INSERT INTO users(username, password,role)
         ('carlos',      'abcd',         'member'),
         ('luis',        'lolsito123',   'member');
 
-INSERT INTO rooms(id)
-    VALUES
-        (1),
-        (2),
-        (3),
-        (4),
-        (5),
-        (6),
-        (7),
-        (8),
-        (9),
-        (10),

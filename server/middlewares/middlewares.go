@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,35 +33,6 @@ func GetUser(db *sql.DB) mux.MiddlewareFunc {
 			URL := r.URL.String()
 
 			endPoitns := strings.Split(URL, "/")
-
-			if endPoitns[1] == "room" {
-				vars := mux.Vars(r)
-
-				id, err := strconv.Atoi(vars["id"])
-
-				if err != nil {
-					errMessage.Message = http.StatusText(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(errMessage)
-					return
-				}
-
-				check, err := database.CheckIfRoomExist(db, id)
-
-				if err != nil {
-					errMessage.Message = http.StatusText(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(errMessage)
-					return
-				}
-
-				if !check {
-
-					errMessage.Message = "El id es Inválido"
-					json.NewEncoder(w).Encode(errMessage)
-					return
-
-				}
-
-			}
 
 			tokenString := r.Header.Get("Authorization-header")
 
@@ -127,7 +97,7 @@ func GetUser(db *sql.DB) mux.MiddlewareFunc {
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 
-			case "room":
+			case "chat":
 
 				ctx := context.WithValue(r.Context(), ContextUserKey, user)
 

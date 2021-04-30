@@ -162,7 +162,3 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
-//func Room(w http.ResponseWriter, r *http.Request) {
-
-//}

@@ -1,23 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"time"
+
+	"github.com/cfabrica46/chat-web-socket/client/requests"
 )
-
-type User struct {
-	ID                                        int
-	Username, Password, Deadline, Role, Token string
-}
-
-type ErrMessage struct {
-	Message string
-}
 
 func main() {
 
@@ -60,7 +48,7 @@ func main() {
 			fmt.Printf("Password: ")
 			fmt.Scan(&password)
 
-			token, err := login(username, password, "http://localhost:8080/login")
+			token, err := requests.Login(username, password, "http://localhost:8080/login")
 
 			if err != nil {
 				log.Fatal(err)
@@ -70,7 +58,7 @@ func main() {
 				break
 			}
 
-			err = profile(token)
+			err = requests.Profile(token)
 
 			if err != nil {
 				log.Fatal(err)
@@ -94,7 +82,7 @@ func main() {
 			fmt.Printf("Password: ")
 			fmt.Scan(&password)
 
-			token, err := login(username, password, "http://localhost:8080/register")
+			token, err := requests.Login(username, password, "http://localhost:8080/register")
 
 			if err != nil {
 				log.Fatal(err)
@@ -104,7 +92,7 @@ func main() {
 				break
 			}
 
-			err = profile(token)
+			err = requests.Profile(token)
 
 			if err != nil {
 				log.Fatal(err)
@@ -136,7 +124,8 @@ func loopIntoProfile(token string, exit *bool) (err error) {
 	fmt.Println("¿Qué deseas hacer?")
 	fmt.Println()
 
-	fmt.Println("1.Cerrar Sesión")
+	fmt.Println("1.Chatear")
+	fmt.Println("2.Cerrar Sesión")
 	fmt.Println("0.Salir")
 	fmt.Println()
 
@@ -153,7 +142,25 @@ func loopIntoProfile(token string, exit *bool) (err error) {
 
 	case 1:
 
-		err = cerrarSesión(token)
+		var idRoom int
+
+		fmt.Println()
+
+		fmt.Println("¿A que sala quieres ingresar?")
+		fmt.Println()
+		fmt.Print("> ")
+
+		fmt.Scan(&idRoom)
+
+		err = requests.Chat(token, idRoom)
+
+		if err != nil {
+			return
+		}
+
+	case 2:
+
+		err = requests.LogOut(token)
 
 		if err != nil {
 			return
@@ -166,184 +173,6 @@ func loopIntoProfile(token string, exit *bool) (err error) {
 		fmt.Println("Seleccione una opción válida")
 
 	}
-
-	return
-}
-
-func login(username, password, url string) (token string, err error) {
-
-	fmt.Println()
-
-	var errMessage ErrMessage
-
-	TokenValue := struct {
-		Token string
-	}{}
-
-	client := &http.Client{
-		Timeout: time.Second * 20,
-	}
-
-	req, err := http.NewRequest("POST", url, nil)
-
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("username", username)
-	req.Header.Set("password", password)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return
-	}
-
-	defer resp.Body.Close()
-
-	dataJSON, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(dataJSON, &TokenValue)
-
-	if err != nil {
-		return
-	}
-
-	if TokenValue.Token == "" {
-
-		err = json.Unmarshal(dataJSON, &errMessage)
-
-		if err != nil {
-			return
-		}
-
-		fmt.Println(errMessage.Message)
-
-	}
-
-	token = TokenValue.Token
-
-	return
-}
-
-func profile(token string) (err error) {
-
-	var user User
-
-	var errMessage ErrMessage
-
-	client := &http.Client{
-		Timeout: time.Second * 20,
-	}
-
-	req, err := http.NewRequest("GET", "http://localhost:8080/user", nil)
-
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("Authorization-header", token)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return
-	}
-
-	defer resp.Body.Close()
-
-	dataJSON, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(dataJSON, &user)
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	if user.ID == 0 && user.Username == "" && user.Password == "" && user.Token == "" {
-
-		err = json.Unmarshal(dataJSON, &errMessage)
-
-		if err != nil {
-			return
-		}
-
-		fmt.Println(errMessage.Message)
-
-		return
-
-	}
-
-	fmt.Printf("Bienvenido %s %s tu ID es: %d y tu Token es: %s\n", user.Role, user.Username, user.ID, user.Token)
-
-	return
-
-}
-
-func cerrarSesión(token string) (err error) {
-
-	var errMessage ErrMessage
-
-	Message := struct {
-		Message string
-	}{}
-
-	client := &http.Client{
-		Timeout: time.Second * 20,
-	}
-
-	req, err := http.NewRequest("GET", "http://localhost:8080/logout", nil)
-
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("Authorization-header", token)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return
-	}
-
-	defer resp.Body.Close()
-
-	dataJSON, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	err = json.Unmarshal(dataJSON, &Message)
-
-	if err != nil {
-		log.Fatal(err)
-
-		return
-	}
-
-	if Message.Message != "" {
-		err = json.Unmarshal(dataJSON, &errMessage)
-
-		if err != nil {
-			return
-		}
-
-		fmt.Println(errMessage.Message)
-		return
-	}
-
-	fmt.Println(Message.Message)
 
 	return
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/cfabrica46/chat-web-socket/server/chat"
 	"github.com/cfabrica46/chat-web-socket/server/database"
 	"github.com/cfabrica46/chat-web-socket/server/handlers"
 	"github.com/cfabrica46/chat-web-socket/server/middlewares"
@@ -35,6 +36,7 @@ func main() {
 
 	mUser.HandleFunc("/user", handlers.User)
 	mUser.HandleFunc("/logout", handlers.Logout)
+	mUser.HandleFunc("/chat/{id:[0-9]+}", chat.Chat)
 	mUser.Use(middlewares.GetUser(db.D))
 
 	mLogin := r.PathPrefix("/").Subrouter()
@@ -42,10 +44,6 @@ func main() {
 	mLogin.HandleFunc("/login", handlers.Login)
 	mLogin.HandleFunc("/register", handlers.Register)
 	mLogin.Use(middlewares.LoginPassword(db.D))
-
-	//muxRoom := http.HandlerFunc(handlers.Room)
-
-	//r.Handle("/room/{id:[0-9]+}", middlewares.GetUser(muxRoom, db.D))
 
 	fmt.Println("Listening on localhost:8080")
 
